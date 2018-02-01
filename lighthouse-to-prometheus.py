@@ -31,36 +31,67 @@ def extract_metrics_from_report(data):
     labels = (('instance', data['url']), )
 
     results = [
-        ('total_time', labels, data['timing']['total']),
-        ('total_score', labels, data['score']),
+        ('lighthouse_scrape_duration_seconds', labels, data['timing']['total']),
+        ('lighthouse_score', labels, data['score']),
     ]
 
     for section in data['reportCategories']:
         section_name = section['name']
 
-        results.append(('section_score', labels + (('section', section_name), ), section['score']))
+        results.append(('lighthouse_section_score', labels + (('section', section_name), ), section['score']))
 
         for audit in section['audits']:
+            audit_id = audit['id']
             results.append((
-                'audit_score',
-                labels + (('section', section_name), ('id', audit['id'])),
+                'lighthouse_audit_score',
+                labels + (('section', section_name), ('id', audit_id)),
                 audit['score']
             ))
+
+            # We'll pull in a few especially interesting values:
+            if audit_id == "first-meaningful-paint":
+                results.append((
+                    'lighthouse_first_meaningful_paint_ms',
+                    labels,
+                    audit['result']['rawValue']
+                ))
+            elif audit_id == "speed-index-metric":
+                timings = audit['result']['extendedInfo']['value']['timings']
+
+                results.append((
+                    'lighthouse_speed_index',
+                    labels,
+                    timings.pop('perceptualSpeedIndex')
+                ))
+
+                for name, milliseconds in timings.items():
+                    if not milliseconds:
+                        print(f'Skipping {data["url"]} {audit_id} {name}: {milliseconds!r}', file=sys.stderr)
+                    else:
+                        results.append((
+                            'lighthouse_event_ms',
+                            labels + (('event', name), ),
+                            milliseconds
+                        ))
 
     return results
 
 
 def push_results(pushgateway_url, results):
     flat_results = [
-        '# TYPE total_time gauge',
-        '# TYPE total_score gauge',
-        '# TYPE section_score gauge',
-        '# TYPE audit_score gauge',
+        '# TYPE lighthouse_scrape_duration_seconds gauge',
+        '# TYPE lighthouse_score gauge',
+        '# TYPE lighthouse_section_score gauge',
+        '# TYPE lighthouse_audit_score gauge',
+        '# TYPE lighthouse_speed_index gauge',
+        '# TYPE lighthouse_event_ms gauge'
     ]
+
     for metric_name, labels, value in results:
         flat_labels = '{%s}' % ','.join(f'{key}="{value}"' for key, value in labels)
         flat_results.append(f'{metric_name}{flat_labels} {value}')
-    # n.b. Prometheus' text format *requires* a trailing
+
+    # n.b. Prometheus' text format *requires* a trailing newline:
     response = requests.post(pushgateway_url, "%s\n" % "\n".join(flat_results))
 
     if not response.ok:

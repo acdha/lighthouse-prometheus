@@ -2,7 +2,12 @@
 
 Run one or more sites through [Google's
 Lighthouse](https://developers.google.com/web/tools/lighthouse/) and send the
-scores to the Prometheus pushgateway:
+scores to the Prometheus pushgateway.
+
+These values are collected from an off-site network to measure production CDN
+behaviour as our users see it:
+
+http://prometheus.loctest.gov/grafana/dashboard/db/lighthouse-web-metrics
 
 ## Quickstart
 
