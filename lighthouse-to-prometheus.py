@@ -5,6 +5,7 @@ import argparse
 import json
 import subprocess
 import sys
+from urllib.parse import quote
 
 import requests
 
@@ -98,7 +99,7 @@ def push_results(pushgateway_url, results):
         print(f'Error pushing results to {pushgateway_url}: HTTP {response.status_code} {response.reason}',
               file=sys.stderr)
         print(response.text, file=sys.stderr)
-        print(flat_results, file=sys.stderr)
+        print("\n".join(flat_results), file=sys.stderr)
         response.raise_for_status()
 
     print(f'Pushed {len(results)} results to {pushgateway_url}: {results[0]}…')
@@ -106,18 +107,33 @@ def push_results(pushgateway_url, results):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__.strip())
-    parser.add_argument(
-        '--chrome-flags', default="",
-        help='Optional flags to pass to Chrome: e.g. --chrome-flags="--proxy-server=socks5://localhost:1080"'
-    )
+    parser.add_argument('--chrome-flags', default="",
+                        help='Optional flags to pass to Chrome: e.g. --chrome-flags="--proxy-server=…')
     parser.add_argument('--pushgateway', default="http://prometheus:9091/metrics/job/lighthouse")
+    parser.add_argument('--use-cached-results', default=False, action="store_true",
+                        help="Use saved JSON files instead of running tests. Only useful for testing.")
     parser.add_argument('urls', metavar="URL", nargs="+")
     args = parser.parse_args()
 
     results = []
 
     for url in args.urls:
-        lighthouse_report = run_lighthouse(url, chrome_flags=args.chrome_flags)
+        lighthouse_report = None
+        cached_result_file = '%s.json' % quote(url, safe="")
+
+        if args.use_cached_results:
+            try:
+                with open(cached_result_file, 'r') as f:
+                    lighthouse_report = json.load(f)
+            except Exception as exc:
+                print(f'Unable to load cached results from {cached_result_file}: {exc}', file=sys.stderr)
+
+        if not lighthouse_report:
+            lighthouse_report = run_lighthouse(url, chrome_flags=args.chrome_flags)
+
+        if args.use_cached_results:
+            with open(cached_result_file, 'w') as f:
+                json.dump(lighthouse_report, f)
 
         results.extend(extract_metrics_from_report(lighthouse_report))
 
