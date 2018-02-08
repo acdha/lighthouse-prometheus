@@ -14,7 +14,7 @@ def run_lighthouse(url, *, chrome_flags=None):
     base_cmd = ['lighthouse', '--perf', '--output=json']
 
     if chrome_flags:
-        base_cmd.append(chrome_flags)
+        base_cmd.append('--chrome-flags=%s' % chrome_flags)
 
     print(f'Launching lighthouse for {url}…')
 
@@ -108,7 +108,7 @@ def push_results(pushgateway_url, results):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__.strip())
     parser.add_argument('--chrome-flags', default="",
-                        help='Optional flags to pass to Chrome: e.g. --chrome-flags="--proxy-server=…')
+                        help='Optional flags to pass to Chrome: e.g. --chrome-flags="--proxy-server=…".')
     parser.add_argument('--pushgateway', default="http://prometheus:9091/metrics/job/lighthouse")
     parser.add_argument('--use-cached-results', default=False, action="store_true",
                         help="Use saved JSON files instead of running tests. Only useful for testing.")
