@@ -32,33 +32,38 @@ def run_lighthouse(url, *, chrome_flags=None):
 def extract_metrics_from_report(data):
     # We'll build list of metric names, Prometheus-style (key, value) label
     # pairs, and a numeric value:
-    labels = (("instance", data["url"]),)
+    labels = (("instance", data["requestedUrl"]),)
 
-    results = [
-        ("lighthouse_scrape_duration_seconds", labels, data["timing"]["total"]),
-        ("lighthouse_score", labels, data["score"]),
-    ]
+    results = [("lighthouse_scrape_duration_seconds", labels, data["timing"]["total"])]
+    # TODO: decide whether we want to have an overall score metric and how to calculate it
 
-    for section in data["reportCategories"]:
-        section_name = section["name"]
+    audits = data["audits"]
+
+    for category_id, category in data["categories"].items():
+        if category_id in ("seo", "pwa", "accessibility"):
+            continue
 
         results.append(
             (
-                "lighthouse_section_score",
-                labels + (("section", section_name),),
-                section["score"],
+                "lighthouse_category_score",
+                labels + (("category", category_id),),
+                category["score"],
             )
         )
 
-        for audit in section["audits"]:
-            audit_id = audit["id"]
-            results.append(
-                (
-                    "lighthouse_audit_score",
-                    labels + (("section", section_name), ("id", audit_id)),
-                    audit["score"],
+        for audit_ref in category["auditRefs"]:
+            audit_id = audit_ref["id"]
+            audit = audits[audit_id]
+            score = audit["score"]
+
+            if score is not None:
+                results.append(
+                    (
+                        "lighthouse_audit_score",
+                        labels + (("category", category_id), ("id", audit_id)),
+                        score,
+                    )
                 )
-            )
 
             # We'll pull in a few especially interesting values:
             if audit_id == "first-meaningful-paint":
@@ -66,35 +71,13 @@ def extract_metrics_from_report(data):
                     (
                         "lighthouse_first_meaningful_paint_ms",
                         labels,
-                        audit["result"]["rawValue"],
+                        audit["numericValue"],
                     )
                 )
-            elif audit_id == "speed-index-metric":
-                timings = audit["result"]["extendedInfo"]["value"]["timings"]
-
+            elif audit_id == "speed-index":
                 results.append(
-                    (
-                        "lighthouse_speed_index",
-                        labels,
-                        timings.pop("perceptualSpeedIndex"),
-                    )
+                    ("lighthouse_speed_index", labels, audit["numericValue"])
                 )
-
-                for name, milliseconds in timings.items():
-                    if not milliseconds:
-                        print(
-                            f'Skipping {data["url"]} {audit_id} {name}:',
-                            f" {milliseconds!r}",
-                            file=sys.stderr,
-                        )
-                    else:
-                        results.append(
-                            (
-                                "lighthouse_event_ms",
-                                labels + (("event", name),),
-                                milliseconds,
-                            )
-                        )
 
     return results
 
