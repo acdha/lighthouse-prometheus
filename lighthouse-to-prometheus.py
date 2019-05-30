@@ -3,6 +3,7 @@
 
 import argparse
 import json
+import random
 import subprocess  # nosec
 import sys
 from itertools import chain
@@ -152,6 +153,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     results = []
+
+    random.shuffle(args.urls)
 
     for url in args.urls:
         lighthouse_report = None
