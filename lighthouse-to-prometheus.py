@@ -11,16 +11,23 @@ from urllib.parse import quote
 import requests
 
 
-def run_lighthouse(url, *, chrome_flags=None):
-    base_cmd = ["npx", "lighthouse", "--perf", "--output=json"]
+def run_lighthouse(url, *, extra_chrome_flags=None):
+    base_cmd = ["npx", "lighthouse", "--quiet", "--preset=perf", "--output=json"]
 
-    if chrome_flags:
-        base_cmd.append("--chrome-flags=%s" % chrome_flags)
+    chrome_flags = ["--headless"]
+    if extra_chrome_flags:
+        chrome_flags.append(extra_chrome_flags)
+
+    base_cmd.append("--chrome-flags=%s" % " ".join(chrome_flags))
 
     print(f"Launching lighthouse for {url}…")
 
     child_result = subprocess.run(  # nosec
-        base_cmd + [url], stdout=subprocess.PIPE, stderr=subprocess.PIPE
+        base_cmd + [url],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        shell=False,
     )
 
     if child_result.returncode != 0:
@@ -123,7 +130,8 @@ if __name__ == "__main__":
     parser.add_argument(
         "--chrome-flags",
         default="",
-        help='Optional flags to pass to Chrome: e.g. --chrome-flags="--proxy-server=…"',
+        help='Optional flags to pass to Chrome: e.g. --chrome-flags="--proxy-server=…"'
+        " (Note: --headless is always passed)",
     )
     parser.add_argument(
         "--pushgateway", default="http://prometheus:9091/metrics/job/lighthouse"
@@ -154,7 +162,9 @@ if __name__ == "__main__":
                 )
 
         if not lighthouse_report:
-            lighthouse_report = run_lighthouse(url, chrome_flags=args.chrome_flags)
+            lighthouse_report = run_lighthouse(
+                url, extra_chrome_flags=args.chrome_flags
+            )
 
         if args.use_cached_results:
             with open(cached_result_file, "w") as f:
