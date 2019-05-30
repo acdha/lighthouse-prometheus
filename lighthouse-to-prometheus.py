@@ -12,7 +12,13 @@ import requests
 
 
 def run_lighthouse(url, *, extra_chrome_flags=None):
-    base_cmd = ["npx", "lighthouse", "--quiet", "--preset=perf", "--output=json"]
+    base_cmd = [
+        "npx",
+        "lighthouse",
+        "--quiet",
+        "--output=json",
+        "--emulated-form-factor=desktop",
+    ]
 
     chrome_flags = ["--headless"]
     if extra_chrome_flags:
@@ -48,7 +54,7 @@ def extract_metrics_from_report(data):
     audits = data["audits"]
 
     for category_id, category in data["categories"].items():
-        if category_id in ("seo", "pwa", "accessibility"):
+        if category_id in ("pwa", "accessibility"):
             continue
 
         results.append(
