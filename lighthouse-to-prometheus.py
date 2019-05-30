@@ -5,6 +5,7 @@ import argparse
 import json
 import subprocess  # nosec
 import sys
+from itertools import chain
 from urllib.parse import quote
 
 import requests
@@ -83,21 +84,24 @@ def extract_metrics_from_report(data):
 
 
 def push_results(pushgateway_url, results):
-    flat_results = [
-        "# TYPE lighthouse_scrape_duration_seconds gauge",
-        "# TYPE lighthouse_score gauge",
-        "# TYPE lighthouse_section_score gauge",
+    flat_result_headers = [
         "# TYPE lighthouse_audit_score gauge",
-        "# TYPE lighthouse_speed_index gauge",
+        "# TYPE lighthouse_category_score gauge",
         "# TYPE lighthouse_event_ms gauge",
+        "# TYPE lighthouse_first_meaningful_paint_ms gauge",
+        "# TYPE lighthouse_scrape_duration_seconds gauge",
+        "# TYPE lighthouse_speed_index gauge",
     ]
 
+    flat_results = []
     for metric_name, labels, value in results:
         flat_labels = "{%s}" % ",".join(f'{key}="{value}"' for key, value in labels)
         flat_results.append(f"{metric_name}{flat_labels} {value}")
 
     # n.b. Prometheus' text format *requires* a trailing newline:
-    response = requests.post(pushgateway_url, "%s\n" % "\n".join(flat_results))
+    response = requests.post(
+        pushgateway_url, "%s\n" % "\n".join(chain(flat_result_headers, flat_results))
+    )
 
     if not response.ok:
         print(
@@ -109,7 +113,9 @@ def push_results(pushgateway_url, results):
         print("\n".join(flat_results), file=sys.stderr)
         response.raise_for_status()
 
-    print(f"Pushed {len(results)} results to {pushgateway_url}: {results[0]}…")
+    print(f"Pushed {len(results)} results to {pushgateway_url}:")
+    for result in flat_results[:3]:
+        print("\t", result)
 
 
 if __name__ == "__main__":
