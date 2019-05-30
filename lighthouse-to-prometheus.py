@@ -11,7 +11,7 @@ import requests
 
 
 def run_lighthouse(url, *, chrome_flags=None):
-    base_cmd = ['lighthouse', '--perf', '--output=json']
+    base_cmd = ["npx", "lighthouse", "--perf", "--output=json"]
 
     if chrome_flags:
         base_cmd.append('--chrome-flags=%s' % chrome_flags)
