@@ -50,7 +50,6 @@ def extract_metrics_from_report(data):
     labels = (("instance", data["requestedUrl"]),)
 
     results = [("lighthouse_scrape_duration_seconds", labels, data["timing"]["total"])]
-    # TODO: decide whether we want to have an overall score metric and how to calculate it
 
     audits = data["audits"]
 
