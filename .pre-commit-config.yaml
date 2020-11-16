@@ -32,8 +32,8 @@ repos:
           - id: pretty-format-json
             args: ["--autofix", "--no-sort-keys", "--indent=4"]
           - id: trailing-whitespace
-    - repo: https://github.com/prettier/prettier
-      rev: 2.1.2
+    - repo: https://github.com/prettier/pre-commit
+      rev: v2.1.2
       hooks:
           - id: prettier
     - repo: https://gitlab.com/pycqa/flake8
