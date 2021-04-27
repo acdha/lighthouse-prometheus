@@ -1,20 +1,26 @@
 {
-    "name": "lighthouse-prometheus",
-    "version": "1.0.0",
-    "description": "Run one or more sites through [Google's Lighthouse](https://developers.google.com/web/tools/lighthouse/) and send the scores to the Prometheus pushgateway.",
-    "dependencies": {
-        "lighthouse": "^5.6.0"
-    },
-    "devDependencies": {
-        "prettier": "^1.19.1"
-    },
-    "repository": {
-        "type": "git",
-        "url": "git+https://github.com/acdha/lighthouse-prometheus.git"
-    },
-    "license": "CC0-1.0",
-    "bugs": {
-        "url": "https://github.com/acdha/lighthouse-prometheus/issues"
-    },
-    "homepage": "https://github.com/acdha/lighthouse-prometheus#readme"
+  "name": "lighthouse-prometheus",
+  "version": "1.0.0",
+  "description": "Run one or more sites through [Google's Lighthouse](https://developers.google.com/web/tools/lighthouse/) and send the scores to the Prometheus pushgateway.",
+  "dependencies": {
+    "lighthouse": "^5.6.0",
+    "snyk": "^1.316.1"
+  },
+  "devDependencies": {
+    "prettier": "^1.19.1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/acdha/lighthouse-prometheus.git"
+  },
+  "license": "CC0-1.0",
+  "bugs": {
+    "url": "https://github.com/acdha/lighthouse-prometheus/issues"
+  },
+  "homepage": "https://github.com/acdha/lighthouse-prometheus#readme",
+  "scripts": {
+    "snyk-protect": "snyk protect",
+    "prepublish": "npm run snyk-protect"
+  },
+  "snyk": true
 }
